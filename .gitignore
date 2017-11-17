@@ -2,8 +2,8 @@
 .classpath
 .project
 .settings/
-config.properties
-traiderbot.log
+*.properties
+*.log
 
 # Mac
 .DS_Store
