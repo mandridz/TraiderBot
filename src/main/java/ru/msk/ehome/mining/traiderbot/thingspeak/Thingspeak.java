@@ -29,8 +29,6 @@ public class Thingspeak {
 		entry.setField(1, btcValue);
 		entry.setField(2, usdValue);
 		
-		
-		
 		Formatter.printThingSpeak(btcValue, usdValue);
 		try {
 			result = channel.update(entry);

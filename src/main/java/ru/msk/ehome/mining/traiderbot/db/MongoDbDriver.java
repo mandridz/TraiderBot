@@ -17,19 +17,30 @@ public class MongoDbDriver {
 	private Morphia morphia;
 	private Datastore ds;
 	
-	public MongoDbDriver() {
+	private MongoDbDriver() {
 		morphia = new Morphia();
 		morphia.map(WalletDbEntity.class);
 		morphia.getMapper().getConverters().addConverter(new CurrencyConverter());
 		morphia.getMapper().getConverters().addConverter(new BigDecimalConverter());
 		morphia.getMapper().getConverters().addConverter(new LocalDateTimeConverter());
 		
-		MongoClientOptions.Builder options_builder = new MongoClientOptions.Builder();
-	    options_builder.maxConnectionIdleTime(60000);
-	    MongoClientOptions options = options_builder.build();
+		MongoClientOptions.Builder builder = new MongoClientOptions.Builder();
+	    //builder.maxConnectionIdleTime(60000);
+	    builder.socketKeepAlive(true);
 		
-		ds = morphia.createDatastore(new MongoClient("", options), "cryptobot_db");
+	    MongoClient mongo = new MongoClient("127.0.0.1", builder.build());
+		//mongo.setWriteConcern(WriteConcern.JOURNALED);
+	    
+		ds = morphia.createDatastore(mongo, "cryptobot_db");
 		ds.ensureIndexes();
+	}
+	
+	public static class MongoDbDriverHolder {
+		public static final MongoDbDriver HOLDER_INSTANCE = new MongoDbDriver();
+	}
+
+	public static MongoDbDriver getInstance() {
+		return MongoDbDriverHolder.HOLDER_INSTANCE;
 	}
 			
 	public List<WalletDbEntity> getWalletDbEntityList() {
@@ -44,10 +55,6 @@ public class MongoDbDriver {
 	
 	public void delete(WalletDbEntity walletDbEntity) {
 		ds.delete(walletDbEntity);
-	}
-	
-	public void close() {
-		
 	}
 
 }

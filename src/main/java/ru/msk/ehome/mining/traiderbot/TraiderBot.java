@@ -170,10 +170,8 @@ public class TraiderBot {
 			NotYetImplementedForExchangeException, ExchangeException, IOException {
 		List<CurrencyEntity> currencyEntityList = new ArrayList<CurrencyEntity>();
 
-		MongoDbDriver mongo = new MongoDbDriver();
-
 		// Список валют из БД
-		List<WalletDbEntity> walletDbEntityList = mongo.getWalletDbEntityList();
+		List<WalletDbEntity> walletDbEntityList = MongoDbDriver.getInstance().getWalletDbEntityList();
 
 		AccountInfo accountInfo = stock.getAccountService().getAccountInfo();
 
@@ -237,7 +235,7 @@ public class TraiderBot {
 								walletDbEntity.setPurchasePrice(purchasePrice);
 								walletDbEntity.setPurchaseDt(purchaseDt);
 
-								mongo.save(walletDbEntity);
+								MongoDbDriver.getInstance().save(walletDbEntity);
 							}
 
 							try {
@@ -291,12 +289,12 @@ public class TraiderBot {
 					Comparator.nullsLast(Comparator.naturalOrder())));
 
 			// Очистка БД от проданных валют
-			mongo.getWalletDbEntityList().forEach(walletDb -> {
+			MongoDbDriver.getInstance().getWalletDbEntityList().forEach(walletDb -> {
 				CurrencyEntity currencyEntity = currencyEntityList.stream()
 						.filter(entity -> entity.getCurrency().equals(walletDb.getCurrency())).findFirst().orElse(null);
 
 				if (currencyEntity == null) {
-					mongo.delete(walletDb);
+					MongoDbDriver.getInstance().delete(walletDb);
 				}
 			});
 		}
