@@ -1,25 +1,25 @@
 TraiderBot
 ==============
 
-Place config.properties file to root folder:
+Place **config.properties** file to root folder of Project and configure it:
 
 #Имя пользователя для биржи
-stockName=<User Name>
+stockName=[[User Name]]
 
 #Ключ для биржи
-stockKey=<Key>
+stockKey=[Key]
 
 #Секрет для биржи
-stockSecret=<Secret>
+stockSecret=[Secret]
 
 #Выводить информацию в ThingSpeak (0 - нет, 1 - да)
 isSendToThingSpeak=1
 
 #Номер канала в ThingSpeak
-thChannelId=<Channel Id>
+thChannelId=[Channel Id]
 
 #Write-ключ ThingSpeak
-thWriteKey=<Key>
+thWriteKey=[Key]
 
 #Максимальное количество валют для ордеров на покупку
 currencyPairsLimit=5
