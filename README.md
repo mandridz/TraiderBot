@@ -3,7 +3,7 @@ TraiderBot
 
 Place config.properties file to root folder:
 
-# Имя пользователя для биржи
+#Имя пользователя для биржи
 stockName=<User Name>
 
 # Ключ для биржи
