@@ -65,7 +65,8 @@ public class TraiderBot {
 	private static final String STR_LOG_NO_RECALCULATED_RANKS = "--- There are no currencies for recalculate Rank-List";
 	private static final String STR_LOG_NO_ASK_LIST = "--- There are no currencies for Ask-List";
 	private static final String STR_LOG_NORMALIZE_RANK = "Normalize Rank-List";
-	private static final String STR_LOG_RECALCULATE_AND_NORMALIZE_RANK = "Recalculate & Normalize ranks";
+	private static final String STR_LOG_GET_BID_LIST = "Get Bid-List";
+	private static final String STR_LOG_RECALCULATE_AND_NORMALIZE_RANK = "Get recalculated & normalized Rank-List";
 	private static final String STR_LOG_BTC_ACCOUNT_BALANCE = "BTC Account balance: ";
 	private static final String STR_LOG_LIMIT_ORDER = "Limit Order Id: %s - COMPLETED";
 	private static final String STR_LOG_NO_ORDERS = "--- No orders";
@@ -117,19 +118,19 @@ public class TraiderBot {
 
 		// Формирование списка валют на продажу
 		Formatter.printMsg(STR_LOG_MAKE_ASK_LIST);
-		List<CurrencyEntity> bidList = makeAskList(currencyEntityList);
+		List<CurrencyEntity> askList = makeAskList(currencyEntityList);
 
 		// Формирование списка валют на покупку
 		Formatter.printMsg(STR_LOG_MAKE_BID_LIST);
-		List<CurrencyEntity> askList = makeBidList(currencyEntityList);
+		List<CurrencyEntity> bidList = makeBidList(currencyEntityList);
 
 		// Выставление ордеров на продажу
 		Formatter.printMsg(STR_LOG_PLACE_LIMIT_ASK_LIST);
-		placeLimitOrders(bidList, OrderType.ASK);
+		placeLimitOrders(askList, OrderType.ASK);
 
 		// Выставление ордеров на покупку
 		Formatter.printMsg(STR_LOG_PLACE_LIMIT_BID_LIST);
-		placeLimitOrders(askList, OrderType.BID);
+		placeLimitOrders(bidList, OrderType.BID);
 
 		// Отправка данных в Thingspeak
 		if (ConfigEntity.getInstance().isSendToThingSpeak()) {
@@ -197,16 +198,17 @@ public class TraiderBot {
 						currencyEntity.setUsdValue(usdValue);
 
 						currencyEntityList.add(currencyEntity);
-
-						// Formatter.printCurrencyEntity(currencyEntity);
 					} else {
 						// Если валюта не BTC и ее баланс больше нуля
 						if (value.compareTo(BigDecimal.ZERO) == 1) {
 							// Сумма в BTC
-							BigDecimal btcValue = ExchangeRate.getExchangeRate(stock, currency, Currency.BTC)
-									.multiply(value).setScale(8, RoundingMode.HALF_UP);
+							BigDecimal btcValue = currency.equals(Currency.USDT)
+									? value.divide(rateBtcUsd, 8, RoundingMode.HALF_UP)
+									: ExchangeRate.getExchangeRate(stock, currency, Currency.BTC).multiply(value)
+											.setScale(8, RoundingMode.HALF_UP);
 							// Сумма в USD
-							BigDecimal usdValue = btcValue.multiply(rateBtcUsd).setScale(2, RoundingMode.HALF_UP);
+							BigDecimal usdValue = currency.equals(Currency.USDT) ? value
+									: btcValue.multiply(rateBtcUsd).setScale(2, RoundingMode.HALF_UP);
 
 							// Валютная пара
 							CurrencyPair currencyPair = stock.getExchangeSymbols().stream()
@@ -315,11 +317,8 @@ public class TraiderBot {
 		currencyEntityList.forEach(entity -> {
 			// Проверка суммы на минимальное значение для ордера
 			// Добавление валюты в список ордеров на продажу, если это не BTC
-			// if
-			// (entity.getBtcValue().compareTo(BigDecimal.valueOf(ConfigEntity.getInstance().getOrderMin()))
-			// == 1
-			// && entity.getCurrency() != Currency.BTC) {
-			if (entity.getCurrency() != Currency.BTC) {
+			if (entity.getBtcValue().compareTo(BigDecimal.valueOf(ConfigEntity.getInstance().getOrderMin())) == 1
+					&& entity.getCurrency() != Currency.BTC) {
 				if (entity.getAsk().compareTo(entity.getProfitPrice()) != -1) {
 					orderEntityList.add(entity);
 
@@ -365,16 +364,17 @@ public class TraiderBot {
 
 				// Добавление валюты в список, стоимость которой > satoshiLimit
 				if (average.compareTo(ConfigEntity.getInstance().getSatoshiLimit()) == 1) {
-					BigDecimal ask = ticker.getAsk().subtract(BigDecimal.valueOf(0.00000001));
-					BigDecimal bid = ticker.getBid().add(BigDecimal.valueOf(0.00000001));
+					BigDecimal ask = ticker.getAsk();// .subtract(BigDecimal.valueOf(0.00000001));
+					BigDecimal bid = ticker.getBid();// .add(BigDecimal.valueOf(0.00000001));
 					BigDecimal volume = ticker.getVolume();
 					BigDecimal rank = ask.subtract(bid).divide(bid, 8, RoundingMode.HALF_UP).multiply(volume)
 							.setScale(0, RoundingMode.HALF_UP);
 
 					rankEntityList.add(new RankEntity(currencyPair, ask, bid, rank));
 				}
-			} catch (NotAvailableFromExchangeException | NotYetImplementedForExchangeException | ExchangeException
-					| IOException e) {
+			} catch (NotAvailableFromExchangeException | ExchangeException e) {
+				LOG.error("This Currency is not avalable now: " + currencyPair);
+			} catch (NotYetImplementedForExchangeException | IOException e) {
 				throwActualException(e);
 			}
 		});
@@ -387,8 +387,8 @@ public class TraiderBot {
 			// которой > orderMin
 			currencyEntityList.forEach(wallet -> {
 				RankEntity rankEntity = rankEntityList.stream()
-						.filter(rank -> rank.getCurrencyPair().contains(wallet.getCurrency())).findFirst().orElse(null);
-
+						.filter(rank -> rank.getCurrencyPair().equals(wallet.getCurrencyPair())).findFirst()
+						.orElse(null);
 				if (rankEntity != null && (wallet.getBtcValue()
 						.compareTo(BigDecimal.valueOf(ConfigEntity.getInstance().getOrderMin())) == 1)) {
 					rankEntityList.remove(rankEntity);
@@ -439,7 +439,7 @@ public class TraiderBot {
 		});
 
 		if (recalculatedRankEntityList.size() > 0) {
-			recalculatedRankEntityList.forEach(rank -> LOG.info(rank.toString()));
+			recalculatedRankEntityList.forEach(rank -> Formatter.printRankList(rank));
 		} else {
 			LOG.info(STR_LOG_NO_RECALCULATED_RANKS);
 		}
@@ -452,7 +452,7 @@ public class TraiderBot {
 
 		recalculatedRankEntityList.forEach(rank -> {
 			BigDecimal normRank = rank.getNormRank().divide(totalRank, 8, RoundingMode.HALF_UP)
-					.multiply(BigDecimal.valueOf(.01)).setScale(2, RoundingMode.HALF_UP);
+					.multiply(BigDecimal.valueOf(.01)).setScale(2, RoundingMode.DOWN);
 
 			rank.setNormRank(normRank);
 		});
@@ -501,7 +501,8 @@ public class TraiderBot {
 				LOG.info(STR_LOG_NORMALIZE_RANK);
 
 				getRecalculatedRankeEntityList(rankEntityList, btcBalance).forEach(rank -> {
-					BigDecimal btcValue = btcBalance.multiply(rank.getNormRank()).setScale(8, RoundingMode.HALF_UP);
+					// HALF_DOWN - чтобы хватало баланса для покупки нескольких валют одновременно
+					BigDecimal btcValue = btcBalance.multiply(rank.getNormRank()).setScale(8, RoundingMode.HALF_DOWN);
 					BigDecimal value = btcValue.divide(rank.getBid(), 8, RoundingMode.HALF_UP);
 					BigDecimal usdValue = btcValue
 							.multiply(ExchangeRate.getExchangeRate(stock, Currency.USDT, Currency.BTC))
@@ -520,8 +521,10 @@ public class TraiderBot {
 			}
 		}
 
+		LOG.info(STR_LOG_GET_BID_LIST);
+
 		if (orderEntityList.size() > 0) {
-			orderEntityList.forEach(order -> LOG.info(order.toString()));
+			orderEntityList.forEach(order -> Formatter.printOrderList(order));
 		} else {
 			LOG.info(STR_LOG_NO_BID_LIST);
 		}
@@ -539,6 +542,7 @@ public class TraiderBot {
 				BigDecimal limitPrice = orderType == OrderType.ASK ? entity.getAsk() : entity.getBid();
 				LimitOrder limitOrder = new LimitOrder(orderType, entity.getValue(), entity.getCurrencyPair(), null,
 						null, limitPrice);
+				
 				try {
 					String limitOrderReturnValue = tradeService.placeLimitOrder(limitOrder);
 

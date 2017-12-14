@@ -17,6 +17,7 @@ public class Formatter {
 	private static final String STR_LOG_DOUBLE_DELIMITER_SHORT = "===========================";
 	private static final String STR_LOG_DELIMITER_SHORT = "---------------------------";
 	private static final String STR_LOG_CURRENCY = "Currency: ";
+	private static final String STR_LOG_CURRENCY_PAIR = "Currency Pair: ";
 	private static final String STR_LOG_VALUE = "Value:     ";
 	private static final String STR_LOG_BTC_VALUE = "BTC Value: ";
 	private static final String STR_LOG_USD_VALUE = "USD Value: ";
@@ -155,6 +156,19 @@ public class Formatter {
 		LOG.info(STR_LOG_BID + rank.getBid());
 		LOG.info(STR_LOG_RANK + rank.getRank());
 		LOG.info(STR_LOG_NORM_RANK + rank.getNormRank());
+		LOG.info(STR_LOG_DELIMITER_SHORT);
+		LOG.info(STR_LOG_EMPTY);
+	}
+	
+	public static void printOrderList(CurrencyEntity currencyEntity) {
+		LOG.info(STR_LOG_DOUBLE_DELIMITER_SHORT);
+		LOG.info(STR_LOG_CURRENCY_PAIR + currencyEntity.getCurrencyPair());
+		LOG.info(STR_LOG_DELIMITER_SHORT);
+		LOG.info(STR_LOG_VALUE + currencyEntity.getValue());
+		LOG.info(STR_LOG_BTC_VALUE + currencyEntity.getBtcValue());
+		LOG.info(STR_LOG_USD_VALUE + currencyEntity.getUsdValue());		
+		LOG.info(STR_LOG_ASK + currencyEntity.getAsk());
+		LOG.info(STR_LOG_BID + currencyEntity.getBid());
 		LOG.info(STR_LOG_DELIMITER_SHORT);
 		LOG.info(STR_LOG_EMPTY);
 	}

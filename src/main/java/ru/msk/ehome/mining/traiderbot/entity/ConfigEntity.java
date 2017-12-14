@@ -7,22 +7,22 @@ import java.math.BigDecimal;
 import java.util.Properties;
 
 public class ConfigEntity {
-	
+
 	// Имя пользователя для биржи
 	private String stockName;
-	
+
 	// Ключ для биржи
 	private String stockKey;
-	
+
 	// Секрет для биржи
 	private String stockSecret;
-	
+
 	// Выводить информацию в ThingSpeak (0 - нет, 1 - да)
 	private Boolean isSendToThingSpeak;
-	
+
 	// Номер канала в ThingSpeak
 	private Integer thChannelId;
-	
+
 	// Write-ключ ThingSpeak
 	private String thWriteKey;
 
@@ -44,9 +44,15 @@ public class ConfigEntity {
 
 	// Интервал запуска программы, в минутах
 	private Long shedulerTimeout;
-	
+
 	// Какую сумму в BTC-кошельке можно использовать для торговли, в процентах
 	private Float btcLimit;
+
+	// EMA Short
+	private Integer emaShortPeriod;
+
+	// EMA Long
+	private Integer emaLongPeriod;
 
 	public ConfigEntity() {
 		Properties prop = new Properties();
@@ -56,7 +62,7 @@ public class ConfigEntity {
 			input = new FileInputStream("config.properties");
 
 			prop.load(input);
-			
+
 			this.stockName = prop.getProperty("stockName", "");
 			this.stockKey = prop.getProperty("stockKey", "");
 			this.stockSecret = prop.getProperty("stockSecret", "");
@@ -70,6 +76,8 @@ public class ConfigEntity {
 			this.currencyPairsLimit = Integer.valueOf(prop.getProperty("currencyPairsLimit", "5"));
 			this.shedulerTimeout = Long.valueOf(prop.getProperty("shedulerTimeout", "2"));
 			this.btcLimit = Float.valueOf(prop.getProperty("btcLimit", "100"));
+			this.emaShortPeriod = Integer.valueOf(prop.getProperty("emaShortPeriod", "5"));
+			this.emaLongPeriod = Integer.valueOf(prop.getProperty("emaLongPeriod", "5"));
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
@@ -82,7 +90,7 @@ public class ConfigEntity {
 			}
 		}
 	}
-	
+
 	public static class ConfigEntityHolder {
 		public static final ConfigEntity HOLDER_INSTANCE = new ConfigEntity();
 	}
@@ -140,8 +148,18 @@ public class ConfigEntity {
 	}
 
 	public Float getBtcLimit() {
-		
+
 		return btcLimit;
+	}
+
+	public Integer getEmaShortPeriod() {
+
+		return emaShortPeriod;
+	}
+
+	public Integer getEmaLongPeriod() {
+
+		return emaLongPeriod;
 	}
 
 	public BigDecimal getSatoshiLimit() {
@@ -155,7 +173,8 @@ public class ConfigEntity {
 				+ ", isSendToThingSpeak=" + isSendToThingSpeak + ", thChannelId=" + thChannelId + ", thWriteKey="
 				+ thWriteKey + ", orderMin=" + orderMin + ", profit=" + profit + ", timeLimit=" + timeLimit
 				+ ", satoshiMin=" + satoshiMin + ", currencyPairsLimit=" + currencyPairsLimit + ", shedulerTimeout="
-				+ shedulerTimeout + ", btcLimit=" + btcLimit + "]";
+				+ shedulerTimeout + ", btcLimit=" + btcLimit + ", emaShortPeriod=" + emaShortPeriod + ", emaLongPeriod="
+				+ emaLongPeriod + "]";
 	}
 
 }
